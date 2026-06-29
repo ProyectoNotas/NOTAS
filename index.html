@@ -527,7 +527,7 @@ function buildWaLink(task) {
   if(!phone)return null;
   const mat=task.materiales&&task.materiales.length?`\n🧰 Materiales: ${task.materiales.join(', ')}`:'';
   const msg=encodeURIComponent(
-    `🔔 *Recordatorio TaskFlow*\n\n📋 *${task.pendiente}*\n📅 Fecha límite: ${formatDate(task.fechaLimite)}\n📝 ${task.descripcion||'Sin descripción'}${mat}\n\n⚠️ Esta tarea aún no ha sido completada. ¡Atiéndela pronto!`
+    `🔔 *TI PENDIENTES*\n\n📋 *${task.pendiente}*\n📅 Fecha límite: ${formatDate(task.fechaLimite)}\n📝 ${task.descripcion||'Sin descripción'}${mat}\n\n⚠️ Este PENDIENTE aún no se termina ¡Atiéndelo pronto!`
   );
   return `https://wa.me/${phone}?text=${msg}`;
 }
