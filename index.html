@@ -5,7 +5,275 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>TaskFlow — Gestión de Tareas</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <style>
+    :root {
+      --bg:       #F4F6FB;
+      --surface:  #FFFFFF;
+      --surface2: #F0F2F8;
+      --border:   #DDE1EF;
+      --accent:   #5A52E0;
+      --accent2:  #7B75F0;
+      --green:    #0EB87A;
+      --orange:   #F07A28;
+      --red:      #E83A4A;
+      --yellow:   #E8A910;
+      --text:     #1A1D3A;
+      --muted:    #7A7FA8;
+      --radius:   16px;
+      --radius-sm:10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 100px;
+    }
+    .header {
+      background: #FFFFFF;
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 12px rgba(90,82,224,0.07);
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: center; }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: #fff;
+    }
+    .logo-text { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
+    .logo-text span { color: var(--accent); }
+    .sync-status { font-size: 16px; cursor: default; transition: opacity 0.3s; }
+    .stats-bar {
+      display: flex; gap: 10px; margin-top: 16px;
+      overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;
+    }
+    .stats-bar::-webkit-scrollbar { display: none; }
+    .stat-chip {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 14px;
+      font-size: 12px; font-weight: 600; white-space: nowrap;
+      display: flex; align-items: center; gap: 6px; color: var(--muted);
+    }
+    .stat-chip .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .main { padding: 20px 16px; }
+    .add-task-main {
+      width: 100%; padding: 16px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      border: none; border-radius: var(--radius);
+      color: #fff; font-family: 'Inter', sans-serif;
+      font-size: 15px; font-weight: 700; letter-spacing: 0.2px;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 8px;
+      box-shadow: 0 6px 20px rgba(90,82,224,0.28);
+      transition: transform 0.15s, box-shadow 0.15s;
+      margin-bottom: 24px;
+    }
+    .add-task-main:active { transform: scale(0.97); box-shadow: 0 3px 10px rgba(90,82,224,0.18); }
+    .task-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 14px;
+      overflow: hidden;
+      animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      box-shadow: 0 2px 10px rgba(90,82,224,0.06);
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .task-side-bar {
+      position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+      border-radius: 4px 0 0 4px; transition: background 0.3s;
+    }
+    .task-header {
+      padding: 14px 14px 12px 18px;
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+    }
+    .task-title-wrap { flex: 1; min-width: 0; }
+    .task-title {
+      font-size: 15px; font-weight: 700; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;
+    }
+    .task-date { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 4px; }
+    .task-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px; transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-icon:active { background: var(--border); }
+    .btn-icon.del:active { background: rgba(232,58,74,0.1); border-color: var(--red); }
+    .task-body { padding: 0 14px 14px 18px; }
+    .task-desc {
+      font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 10px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .task-materiales {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 10px; margin-bottom: 10px;
+      font-size: 12px; color: var(--muted); line-height: 1.5;
+    }
+    .task-materiales strong { color: var(--accent); font-weight: 700; font-size: 11px; display: block; margin-bottom: 2px; }
+    .task-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+    .meta-chip {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 10px;
+      font-size: 11px; font-weight: 500; color: var(--muted);
+    }
+    .meta-chip .icon { font-size: 11px; }
+    .task-footer { display: flex; gap: 8px; align-items: center; }
+    .status-btn {
+      flex: 1; padding: 9px 10px; border-radius: 8px; border: none;
+      font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 5px;
+      transition: all 0.2s; letter-spacing: 0.3px;
+    }
+    .status-btn:active { transform: scale(0.96); }
+    .s-pending  { background: #FFF8E6; color: #B37800; border: 1px solid #F5D98A; }
+    .s-progress { background: #EFEDFF; color: var(--accent); border: 1px solid #C4C0F7; }
+    .s-done     { background: #E6FAF4; color: #0A9965; border: 1px solid #7FD9BC; }
+    .s-overdue  { background: #FEE8EA; color: var(--red); border: 1px solid #F5B0B7; }
+    .bar-pending  { background: var(--yellow); }
+    .bar-progress { background: var(--accent); }
+    .bar-done     { background: var(--green); }
+    .bar-overdue  { background: var(--red); }
+    .wa-btn {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: #E8FAF0; border: 1px solid #A8EAC8;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px; flex-shrink: 0;
+      text-decoration: none; transition: background 0.15s;
+    }
+    .wa-btn:active { background: #C6F0DC; }
+    .urgent-ring { animation: urgentPulse 1.5s infinite; }
+    @keyframes urgentPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(232,58,74,0.3); }
+      50%       { box-shadow: 0 0 0 6px rgba(232,58,74,0); }
+    }
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(26,29,58,0.45); backdrop-filter: blur(4px);
+      display: flex; align-items: flex-end;
+      opacity: 0; transition: opacity 0.25s; pointer-events: none;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: #FFFFFF; border-radius: 24px 24px 0 0;
+      width: 100%; max-height: 92vh; overflow-y: auto; padding: 0 0 40px;
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1);
+      box-shadow: 0 -8px 40px rgba(90,82,224,0.12);
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+    .modal-header { padding: 16px 20px 0; display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 18px; font-weight: 800; color: var(--text); }
+    .modal-close {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px; color: var(--muted);
+    }
+    .modal-body { padding: 20px 20px 0; }
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.8px; margin-bottom: 7px;
+    }
+    .form-input, .form-textarea, .form-select {
+      width: 100%; background: var(--surface2);
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 14px; padding: 12px 14px;
+      outline: none; transition: border-color 0.2s; appearance: none;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--accent); background: #fff;
+      box-shadow: 0 0 0 3px rgba(90,82,224,0.1);
+    }
+    .form-textarea { min-height: 75px; resize: vertical; line-height: 1.5; }
+    .form-input::placeholder, .form-textarea::placeholder { color: #B0B4CC; }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+    .time-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
+    .mat-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .mat-tag {
+      background: #EFEDFF; border: 1px solid #C4C0F7;
+      color: var(--accent); border-radius: 20px;
+      padding: 4px 10px; font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .mat-tag-del {
+      cursor: pointer; font-size: 13px; color: var(--accent2);
+      line-height: 1; border: none; background: none; padding: 0; font-family: inherit;
+    }
+    .mat-input-row { display: flex; gap: 8px; }
+    .mat-input-row .form-input { flex: 1; }
+    .mat-add-btn {
+      padding: 12px 16px; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-sm); font-weight: 700;
+      font-size: 18px; cursor: pointer; flex-shrink: 0; transition: background 0.15s;
+    }
+    .mat-add-btn:active { background: var(--accent2); }
+    .wa-row {
+      background: #E8FAF0; border: 1px solid #A8EAC8;
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .wa-row input {
+      flex: 1; background: transparent; border: none;
+      color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; outline: none;
+    }
+    .wa-row input::placeholder { color: #7EC8A4; }
+    .wa-icon { font-size: 20px; flex-shrink: 0; }
+    .btn-save {
+      width: 100%; margin-top: 8px; padding: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: var(--radius);
+      color: #fff; font-family: 'Inter', sans-serif;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 6px 20px rgba(90,82,224,0.25);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-save:active { transform: scale(0.97); }
+    .empty { text-align: center; padding: 60px 20px; }
+    .empty-icon { font-size: 56px; margin-bottom: 16px; }
+    .empty-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+    .empty-sub { font-size: 14px; color: var(--muted); line-height: 1.5; }
+    .alert-banner {
+      background: #FEE8EA; border: 1px solid #F5B0B7;
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+      font-size: 13px; font-weight: 500; color: var(--red);
+      animation: slideIn 0.3s ease;
+    }
+    .section-label {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .notif-badge {
+      background: var(--red); color: #fff; font-size: 9px; font-weight: 800;
+      border-radius: 50%; min-width: 16px; height: 16px;
+      display: flex; align-items: center; justify-content: center; padding: 0 3px;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: opacity(0.4); cursor: pointer; }
+    input[type="number"] { -moz-appearance: textfield; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  </style>
 </head>
 <body>
 
@@ -17,7 +285,7 @@
       <div class="logo-text">Task<span>Flow</span></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <div id="syncStatus" class="sync-status" title="Estado de sincronización">☁️</div>
+      <div id="syncStatus" class="sync-status" title="Estado de sincronización">💾</div>
       <div id="overdueBadge" style="display:none" class="notif-badge">0</div>
     </div>
   </div>
@@ -34,7 +302,6 @@
   <button class="add-task-main" onclick="openModal()">
     <span style="font-size:18px">＋</span> Nueva Tarea
   </button>
-
   <div id="alertContainer"></div>
   <div id="taskList"></div>
 </div>
@@ -121,10 +388,383 @@
   </div>
 </div>
 
-<!-- Supabase JS SDK (CDN) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js"></script>
-<script src="js/db.js"></script>
-<script src="js/app.js"></script>
+<script>
+// ── CONFIGURACIÓN SUPABASE (opcional) ────────────────────────
+// Si tienes Supabase, reemplaza estos valores con los tuyos.
+// Si no, la app funciona con localStorage automáticamente.
+const SUPABASE_URL  = 'TU_PROJECT_URL';   // ej: https://abcd1234.supabase.co
+const SUPABASE_ANON = 'TU_ANON_KEY';      // ej: eyJhbGci...
+
+// ── DB LAYER ─────────────────────────────────────────────────
+let _supabase = null;
+let useSupabase = false;
+
+(function initDB() {
+  const ok =
+    SUPABASE_URL  && !SUPABASE_URL.includes('TU_PROJECT') &&
+    SUPABASE_ANON && !SUPABASE_ANON.includes('TU_ANON');
+  if (!ok) return;
+  try {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.onload = () => {
+      _supabase   = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+      useSupabase = true;
+      console.log('[TaskFlow] Supabase conectado ✅');
+      init();
+    };
+    s.onerror = () => { console.warn('[TaskFlow] Fallo al cargar Supabase SDK, usando localStorage'); init(); };
+    document.head.appendChild(s);
+    return; // init() se llama cuando carga el SDK
+  } catch(e) { console.warn('[TaskFlow] Supabase error:', e); }
+})();
+
+const LS_KEY = 'taskflow_tasks';
+function lsLoad() { try { return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); } catch { return []; } }
+function lsSave(t) { localStorage.setItem(LS_KEY, JSON.stringify(t)); }
+
+async function dbLoadTasks() {
+  if (!useSupabase) return lsLoad();
+  const { data, error } = await _supabase.from('tasks').select('*').order('created_at',{ascending:false});
+  if (error) { console.error('[DB]', error.message); return lsLoad(); }
+  return (data||[]).map(dbRowToTask);
+}
+async function dbInsertTask(task) {
+  if (!useSupabase) { const t=lsLoad(); t.unshift(task); lsSave(t); return task; }
+  const { data, error } = await _supabase.from('tasks').insert([taskToDbRow(task)]).select().single();
+  if (error) { console.error('[DB]', error.message); return null; }
+  return dbRowToTask(data);
+}
+async function dbUpdateTask(id, changes) {
+  if (!useSupabase) {
+    const t=lsLoad(), i=t.findIndex(x=>x.id===id);
+    if(i!==-1){Object.assign(t[i],changes);lsSave(t);} return true;
+  }
+  const { error } = await _supabase.from('tasks').update(taskToDbRow(changes)).eq('id',id);
+  if (error) { console.error('[DB]', error.message); return false; } return true;
+}
+async function dbDeleteTask(id) {
+  if (!useSupabase) { lsSave(lsLoad().filter(t=>t.id!==id)); return true; }
+  const { error } = await _supabase.from('tasks').delete().eq('id',id);
+  if (error) { console.error('[DB]', error.message); return false; } return true;
+}
+function taskToDbRow(t) {
+  const r={};
+  if(t.id!==undefined)          r.id          = t.id;
+  if(t.pendiente!==undefined)   r.pendiente    = t.pendiente;
+  if(t.descripcion!==undefined) r.descripcion  = t.descripcion;
+  if(t.fechaInicio!==undefined) r.fecha_inicio = t.fechaInicio||null;
+  if(t.fechaLimite!==undefined) r.fecha_limite = t.fechaLimite||null;
+  if(t.status!==undefined)      r.status       = t.status;
+  if(t.lapso!==undefined)       r.lapso        = t.lapso?Number(t.lapso):null;
+  if(t.lapsoUnit!==undefined)   r.lapso_unit   = t.lapsoUnit||'days';
+  if(t.whatsapp!==undefined)    r.whatsapp     = t.whatsapp||null;
+  if(t.materiales!==undefined)  r.materiales   = t.materiales||[];
+  if(t.createdAt!==undefined)   r.created_at   = new Date(t.createdAt).toISOString();
+  if(t.updatedAt!==undefined)   r.updated_at   = new Date(t.updatedAt).toISOString();
+  return r;
+}
+function dbRowToTask(row) {
+  return {
+    id:row.id, pendiente:row.pendiente,
+    descripcion:row.descripcion||'',
+    fechaInicio:row.fecha_inicio||'',
+    fechaLimite:row.fecha_limite||'',
+    status:row.status||'pending',
+    lapso:row.lapso!=null?String(row.lapso):'',
+    lapsoUnit:row.lapso_unit||'days',
+    whatsapp:row.whatsapp||'',
+    materiales:Array.isArray(row.materiales)?row.materiales:[],
+    createdAt:row.created_at?new Date(row.created_at).getTime():Date.now(),
+    updatedAt:row.updated_at?new Date(row.updated_at).getTime():Date.now(),
+  };
+}
+
+// ── APP STATE ─────────────────────────────────────────────────
+let tasks = [];
+let editingId = null;
+let currentMaterials = [];
+let checkInterval = null;
+
+// ── UTILS ─────────────────────────────────────────────────────
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function formatDate(d) { if(!d)return''; const[y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+function today() { return new Date().toISOString().split('T')[0]; }
+function getLapsoLabel(val,unit) {
+  const l={hours:'hora',days:'día',weeks:'semana'}[unit]||'día';
+  return `${val} ${l}${parseInt(val)!==1?'s':''}`;
+}
+function isOverdue(t) {
+  if(t.status==='done'||!t.fechaLimite)return false;
+  return new Date(t.fechaLimite+'T23:59:59')<new Date();
+}
+function isUrgent(t) {
+  if(t.status==='done'||!t.fechaLimite)return false;
+  const d=new Date(t.fechaLimite+'T23:59:59')-new Date();
+  return d>=0&&d<86400000*2;
+}
+function getDaysLeft(t) {
+  if(!t.fechaLimite)return null;
+  const d=new Date(t.fechaLimite+'T23:59:59')-new Date();
+  return d<0?null:Math.ceil(d/86400000);
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── STATUS ────────────────────────────────────────────────────
+const STATUS = {
+  pending:  {label:'⏳ Pendiente', cls:'s-pending',  bar:'bar-pending'},
+  progress: {label:'🔄 En Proceso',cls:'s-progress', bar:'bar-progress'},
+  done:     {label:'✅ Completado',cls:'s-done',      bar:'bar-done'},
+  overdue:  {label:'🚨 Vencido',   cls:'s-overdue',  bar:'bar-overdue'},
+};
+function nextStatus(c) { const cy=['pending','progress','done']; return cy[(cy.indexOf(c)+1)%3]; }
+
+// ── WHATSAPP ──────────────────────────────────────────────────
+function buildWaLink(task) {
+  const phone=(task.whatsapp||'').replace(/\D/g,'');
+  if(!phone)return null;
+  const mat=task.materiales&&task.materiales.length?`\n🧰 Materiales: ${task.materiales.join(', ')}`:'';
+  const msg=encodeURIComponent(
+    `🔔 *Recordatorio TaskFlow*\n\n📋 *${task.pendiente}*\n📅 Fecha límite: ${formatDate(task.fechaLimite)}\n📝 ${task.descripcion||'Sin descripción'}${mat}\n\n⚠️ Esta tarea aún no ha sido completada. ¡Atiéndela pronto!`
+  );
+  return `https://wa.me/${phone}?text=${msg}`;
+}
+
+// ── SYNC UI ───────────────────────────────────────────────────
+function setSyncStatus(state) {
+  const el=document.getElementById('syncStatus');
+  if(!el)return;
+  const map={syncing:'🔄',ok:'☁️',local:'💾',error:'⚠️'};
+  const tip={syncing:'Sincronizando...',ok:'Sincronizado con Supabase',local:'Guardado localmente',error:'Error al sincronizar'};
+  el.textContent=map[state]||'💾';
+  el.title=tip[state]||'';
+}
+
+// ── MATERIALES ────────────────────────────────────────────────
+function addMaterial() {
+  const input=document.getElementById('fMatInput');
+  const val=input.value.trim();
+  if(!val)return;
+  if(currentMaterials.includes(val)){input.value='';return;}
+  currentMaterials.push(val);
+  input.value='';
+  renderMaterials();
+  input.focus();
+}
+function removeMaterial(i) { currentMaterials.splice(i,1); renderMaterials(); }
+function renderMaterials() {
+  document.getElementById('matTags').innerHTML=currentMaterials.map((m,i)=>
+    `<div class="mat-tag">${escHtml(m)}<button class="mat-tag-del" onclick="removeMaterial(${i})">✕</button></div>`
+  ).join('');
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render() {
+  const list=document.getElementById('taskList');
+  tasks.forEach(t=>{ if(t.status!=='done'&&isOverdue(t))t.status='overdue'; });
+
+  const cnt={pending:0,progress:0,done:0,overdue:0};
+  tasks.forEach(t=>{ if(cnt[t.status]!==undefined)cnt[t.status]++; });
+
+  document.getElementById('cntPending').textContent  =`${cnt.pending} Pendiente${cnt.pending!==1?'s':''}`;
+  document.getElementById('cntProgress').textContent =`${cnt.progress} En Proceso`;
+  document.getElementById('cntDone').textContent     =`${cnt.done} Completado${cnt.done!==1?'s':''}`;
+  document.getElementById('cntOverdue').textContent  =`${cnt.overdue} Vencido${cnt.overdue!==1?'s':''}`;
+
+  const badge=document.getElementById('overdueBadge');
+  if(cnt.overdue>0){badge.style.display='flex';badge.textContent=cnt.overdue;}
+  else badge.style.display='none';
+
+  const alertC=document.getElementById('alertContainer');
+  alertC.innerHTML='';
+  const urgent=tasks.filter(t=>isUrgent(t)&&t.status!=='done');
+  if(urgent.length){
+    const d=document.createElement('div');
+    d.className='alert-banner';
+    d.innerHTML=`⚠️ <strong>${urgent.length}</strong> tarea${urgent.length>1?'s':''} vence${urgent.length>1?'n':''} en menos de 2 días`;
+    alertC.appendChild(d);
+  }
+
+  if(tasks.length===0){
+    list.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Sin tareas aún</div><div class="empty-sub">Presiona "Nueva Tarea" para empezar a organizar tu día</div></div>`;
+    return;
+  }
+
+  const groups=[
+    {key:'overdue', label:'🚨 Vencidas',   items:tasks.filter(t=>t.status==='overdue')},
+    {key:'pending', label:'⏳ Pendientes',  items:tasks.filter(t=>t.status==='pending')},
+    {key:'progress',label:'🔄 En Proceso',  items:tasks.filter(t=>t.status==='progress')},
+    {key:'done',    label:'✅ Completadas', items:tasks.filter(t=>t.status==='done')},
+  ].filter(g=>g.items.length>0);
+
+  list.innerHTML=groups.map(g=>`
+    <div class="section-label">${g.label} (${g.items.length})</div>
+    ${g.items.map(t=>renderCard(t)).join('')}
+  `).join('');
+}
+
+function renderCard(task) {
+  const st=STATUS[task.status]||STATUS.pending;
+  const dl=getDaysLeft(task);
+  const ov=isOverdue(task);
+  const urg=isUrgent(task);
+  const wa=buildWaLink(task);
+
+  const daysChip=task.fechaLimite
+    ?ov
+      ?`<div class="meta-chip" style="color:var(--red);border-color:#F5B0B7;background:#FEE8EA"><span class="icon">🚨</span>Venció ${formatDate(task.fechaLimite)}</div>`
+      :dl!==null
+        ?`<div class="meta-chip" style="${dl<=2?'color:var(--orange);border-color:#F7C89A;background:#FEF3E8':''}"><span class="icon">📅</span>${dl===0?'Vence hoy':dl===1?'Vence mañana':`${dl} días`}</div>`
+        :''
+    :'';
+
+  const lapsoChip=task.lapso?`<div class="meta-chip"><span class="icon">⏳</span>${getLapsoLabel(task.lapso,task.lapsoUnit)}</div>`:'';
+  const waChip=task.whatsapp?`<div class="meta-chip" style="color:#0A8A50;border-color:#A8EAC8;background:#E8FAF0"><span class="icon">📱</span>WA activo</div>`:'';
+  const matChip=task.materiales&&task.materiales.length?`<div class="meta-chip" style="color:var(--accent);border-color:#C4C0F7;background:#EFEDFF"><span class="icon">🧰</span>${task.materiales.length} material${task.materiales.length!==1?'es':''}</div>`:'';
+  const matBlock=task.materiales&&task.materiales.length?`<div class="task-materiales"><strong>🧰 Materiales</strong>${task.materiales.map(m=>`• ${escHtml(m)}`).join(' &nbsp;')}</div>`:'';
+  const waBtn=wa?`<a href="${wa}" target="_blank" class="wa-btn${ov||urg?' urgent-ring':''}" title="Enviar recordatorio por WhatsApp">📲</a>`:'';
+
+  return `
+    <div class="task-card" id="card-${task.id}">
+      <div class="task-side-bar ${st.bar}"></div>
+      <div class="task-header">
+        <div class="task-title-wrap">
+          <div class="task-title">${escHtml(task.pendiente)}</div>
+          <div class="task-date">📅 Inicio: ${formatDate(task.fechaInicio)||'—'}</div>
+        </div>
+        <div class="task-actions">
+          <div class="btn-icon" onclick="openModal('${task.id}')" title="Editar">✏️</div>
+          <div class="btn-icon del" onclick="deleteTask('${task.id}')" title="Eliminar">🗑</div>
+        </div>
+      </div>
+      <div class="task-body">
+        ${task.descripcion?`<div class="task-desc">${escHtml(task.descripcion)}</div>`:''}
+        ${matBlock}
+        <div class="task-meta">${daysChip}${lapsoChip}${matChip}${waChip}</div>
+        <div class="task-footer">
+          <button class="status-btn ${st.cls}" onclick="cycleStatus('${task.id}')">${st.label}</button>
+          ${waBtn}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────
+async function cycleStatus(id) {
+  const t=tasks.find(t=>t.id===id); if(!t)return;
+  t.status=t.status==='overdue'?'done':nextStatus(t.status);
+  render(); setSyncStatus('syncing');
+  const ok=await dbUpdateTask(id,{status:t.status,updatedAt:Date.now()});
+  setSyncStatus(ok?(useSupabase?'ok':'local'):'error');
+}
+
+async function deleteTask(id) {
+  if(!confirm('¿Eliminar esta tarea?'))return;
+  tasks=tasks.filter(t=>t.id!==id);
+  render(); setSyncStatus('syncing');
+  const ok=await dbDeleteTask(id);
+  setSyncStatus(ok?(useSupabase?'ok':'local'):'error');
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function openModal(id) {
+  editingId=id||null;
+  document.getElementById('modalTitle').textContent=id?'Editar Tarea':'Nueva Tarea';
+  currentMaterials=[];
+  if(id){
+    const t=tasks.find(t=>t.id===id);
+    if(t){
+      document.getElementById('fPendiente').value  =t.pendiente||'';
+      document.getElementById('fFechaInicio').value=t.fechaInicio||'';
+      document.getElementById('fFechaLimite').value=t.fechaLimite||'';
+      document.getElementById('fDescripcion').value=t.descripcion||'';
+      document.getElementById('fLapso').value      =t.lapso||'';
+      document.getElementById('fLapsoUnit').value  =t.lapsoUnit||'days';
+      document.getElementById('fWhatsApp').value   =t.whatsapp||'';
+      document.getElementById('fStatus').value     =(t.status==='overdue'?'pending':t.status)||'pending';
+      currentMaterials=t.materiales?[...t.materiales]:[];
+    }
+  } else {
+    document.getElementById('fPendiente').value  ='';
+    document.getElementById('fFechaInicio').value=today();
+    document.getElementById('fFechaLimite').value='';
+    document.getElementById('fDescripcion').value='';
+    document.getElementById('fLapso').value      ='';
+    document.getElementById('fLapsoUnit').value  ='days';
+    document.getElementById('fWhatsApp').value   ='';
+    document.getElementById('fStatus').value     ='pending';
+  }
+  document.getElementById('fMatInput').value='';
+  renderMaterials();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editingId=null;
+}
+
+function handleOverlayClick(e) {
+  if(e.target===document.getElementById('modalOverlay'))closeModal();
+}
+
+async function saveTask() {
+  const pendiente  =document.getElementById('fPendiente').value.trim();
+  const fechaInicio=document.getElementById('fFechaInicio').value;
+  const fechaLimite=document.getElementById('fFechaLimite').value;
+  const descripcion=document.getElementById('fDescripcion').value.trim();
+  const lapso      =document.getElementById('fLapso').value;
+  const lapsoUnit  =document.getElementById('fLapsoUnit').value;
+  const whatsapp   =document.getElementById('fWhatsApp').value.trim();
+  const status     =document.getElementById('fStatus').value;
+
+  if(!pendiente){alert('El título del pendiente es obligatorio');return;}
+
+  setSyncStatus('syncing');
+
+  if(editingId){
+    const t=tasks.find(t=>t.id===editingId);
+    if(t){
+      const changes={pendiente,fechaInicio,fechaLimite,descripcion,lapso,lapsoUnit,whatsapp,status,
+        materiales:[...currentMaterials],updatedAt:Date.now()};
+      Object.assign(t,changes);
+      render(); closeModal();
+      const ok=await dbUpdateTask(editingId,changes);
+      setSyncStatus(ok?(useSupabase?'ok':'local'):'error');
+    }
+  } else {
+    const newTask={
+      id:uid(),pendiente,fechaInicio,fechaLimite,descripcion,
+      lapso,lapsoUnit,whatsapp,status,
+      materiales:[...currentMaterials],
+      createdAt:Date.now(),updatedAt:Date.now()
+    };
+    tasks.unshift(newTask);
+    render(); closeModal();
+    const saved=await dbInsertTask(newTask);
+    if(saved&&saved.id!==newTask.id){
+      const i=tasks.findIndex(t=>t.id===newTask.id);
+      if(i!==-1)tasks[i].id=saved.id;
+    }
+    setSyncStatus(saved?(useSupabase?'ok':'local'):'error');
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+async function init() {
+  setSyncStatus('syncing');
+  tasks=await dbLoadTasks();
+  setSyncStatus(useSupabase?'ok':'local');
+  render();
+  if(checkInterval)clearInterval(checkInterval);
+  checkInterval=setInterval(()=>render(),60000);
+}
+
+// Solo llamar init() aquí si Supabase NO está configurado
+// (si está configurado, se llama cuando carga el SDK)
+if(!SUPABASE_URL||SUPABASE_URL.includes('TU_PROJECT')) init();
+</script>
 </body>
 </html>
